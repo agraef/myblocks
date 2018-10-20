@@ -16,5 +16,13 @@ testblocks: testblocks.o myblocks.o $(SDKLIB)
 $(SDKLIB):
 	$(MAKE) -C $(SDKPATH)/Build/Linux
 
+# Checkout the submodules (SDK etc.), you need to do this first!
+checkout:
+	git submodule update --init
+
 clean:
 	rm -f *.o testblocks
+
+# Also get rid of the submodules.
+realclean: clean
+	git submodule deinit --all -f
