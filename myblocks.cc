@@ -264,6 +264,34 @@ extern "C" bool myblocks_set_program(int blocknum, bool save, const char *code)
   }
 }
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
+extern "C" bool myblocks_load_program(int blocknum, bool save,
+				      const char *filename)
+{
+  struct stat st;
+  if (stat(filename, &st)) {
+    myblocks_msg_string = std::string(filename) + ": " +
+      std::string(strerror(errno));
+    return false;
+  }
+  char *code = (char*)calloc(st.st_size+1, 1);
+  FILE *fp = fopen(filename, "r");
+  if (fp && fread(code, 1, st.st_size, fp) == (size_t)st.st_size) {
+    fclose(fp);
+    bool res = myblocks_set_program(blocknum, save, code);
+    free(code);
+    return res;
+  } else {
+    free(code);
+    myblocks_msg_string = std::string(filename) + ": " +
+      std::string(strerror(errno));
+    if (fp) fclose(fp);
+    return false;
+  }
+}
+
 extern "C" void myblocks_reset(int blocknum, bool factory)
 {
   if (app) app->finder.Reset(blocknum, factory);

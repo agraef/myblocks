@@ -15,6 +15,7 @@ extern void juce_fini(void);
 extern bool juce_process_events(void);
 extern int  myblocks_count_blocks(void);
 extern bool myblocks_set_program(int blocknum, bool save, const char *code);
+extern bool myblocks_load_program(int blocknum, bool save, const char *filename);
 extern void myblocks_reset(int blocknum, bool factory);
 
 #ifdef __cplusplus
