@@ -25,9 +25,7 @@ myblocks = require("myblocks")
 myblocks.start()
 
 -- We wrap most of the script in this little main function which is pcalled
--- below to take care of interrupts (Ctrl+C). This ensures that we always stop
--- JUCE before bailing out, so that it doesn't bother us with a bunch of
--- leaked object assertions.
+-- below to take care of interrupts (Ctrl+C).
 
 function main()
    -- Wait until the devices are online.
