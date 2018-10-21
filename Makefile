@@ -5,13 +5,18 @@ SDKLIB = $(SDKPATH)/Build/Linux/Debug/libBLOCKS-SDK.a
 INCLUDES = -I$(SDKPATH)
 LIBS = -lpthread -ldl -lasound
 
+CC = gcc
 CFLAGS = -g -O2
+CXX = gcc
+CXXFLAGS = -g -O2
 CPPFLAGS = $(INCLUDES) -DJUCE_DEBUG=1
 
 all: testblocks
 
 testblocks: testblocks.o myblocks.o $(SDKLIB) 
 	g++ -g -o $@ $^ $(LIBS)
+
+testblocks.o: myblocks.h
 
 $(SDKLIB):
 	$(MAKE) -C $(SDKPATH)/Build/Linux
