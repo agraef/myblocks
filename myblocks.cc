@@ -108,19 +108,22 @@ void BlockFinder::topologyChanged()
   // variable.
   auto currentTopology = pts.getCurrentTopology();
 
+  blocks = currentTopology.blocks;
+  changed = true;
+
 #if 0
   // The blocks member of a BlockTopology contains an array of blocks. Here we
   // loop over them and print some information.
-  cout << "\nDetected " << currentTopology.blocks.size() << " blocks.\n";
+  cout << "\nDetected " << blocks.size() << " blocks.\n";
 
-  for (auto& block : currentTopology.blocks) {
+  for (auto& block : blocks) {
     cout << "\n";
     cout << "    Type:          " << block_type(block->getType())
 	 << " (" << block->getType() << ")\n";
     cout << "    Description:   " << block->getDeviceDescription()
 	 << (block->isMasterBlock()?" ** MASTER BLOCK **":"") << "\n";
     cout << "    Battery level: " << block->getBatteryLevel() << "\n";
-    cout << "    UID:           " << block->uid << "\n";
+    cout << "    UID:           " << String::toHexString(block->uid) << "\n";
     cout << "    Serial number: " << block->serialNumber << "\n";
 #if 0
     cout << "    Config items:  " << block->getMaxConfigIndex() << "\n";
@@ -130,11 +133,13 @@ void BlockFinder::topologyChanged()
       cout << "item #" << i << ": " << data.name << " = " << data.value << String(block->isValidUserConfigIndex(i)?" (user)":"") << "\n";
     }
 #endif
+#if 0
+    if (Block::Program *prog = block->getProgram()) {
+      cout << "    code:\n" << prog->getLittleFootProgram();
+    }
+#endif
   }
 #endif
-
-  blocks = currentTopology.blocks;
-  changed = true;
 }
 
 bool BlockFinder::Changed()
@@ -165,14 +170,14 @@ struct BlockProgram : Block::Program
 };
 
 // XXXFIXME: Due to limitations in the BLOCKS SDK, SetProgram() isn't quite
-// the same as what the Roli Dashboard or the IDE does, which apparently have
-// some hidden magic built into them to pick up the XML configuration data in
-// the code. I couldn't find this in the SDK anywhere, so all SetProgram()
-// currently does is compile and load the program on the block. This will
-// generally only work with simple, self-contained programs which don't rely
-// on any configuration data (some programs which only need the factory
-// configuration data will work as well). Otherwise you'll get an error
-// message indicating that some variable was not defined.
+// the same as what the Roli Dashboard or the IDE provides, which apparently
+// have some hidden magic built into them to pick up the XML configuration
+// data in the code. I couldn't find this in the SDK anywhere, so all
+// SetProgram() currently does is compile and load the program on the block.
+// This will generally work with simple, self-contained programs which don't
+// rely on any configuration data (some programs which only need the factory
+// configuration will work as well). Otherwise you'll get an error message
+// indicating that some variable was not defined.
 
 bool BlockFinder::SetProgram(int blocknum, String code, String& msg)
 {
@@ -368,12 +373,10 @@ extern "C" void myblocks_factory_reset(int blocknum)
   if (app) app->finder.FactoryReset(blocknum);
 }
 
-// NOTE: The string fields in the info struct are all in static storage and
-// will be overridden the next time the operation is invoked.
 extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
 {
   if (app) {
-    static std::string descr, serial, version;
+    static std::string descr, serial, version, code;
     Block *block = app->finder.GetBlock(blocknum);
     if (!block || !info) return false;
     descr = block->getDeviceDescription().toStdString();
@@ -388,6 +391,11 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     info->battery_level = block->getBatteryLevel();
     info->is_charging = block->isBatteryCharging();
     info->is_master = block->isMasterBlock();
+    if (Block::Program *prog = block->getProgram()) {
+      code = prog->getLittleFootProgram().toStdString();
+      info->code = code.c_str();
+    } else
+      info->code = 0;
     return true;
   } else
     return false;

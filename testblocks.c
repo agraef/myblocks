@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
       for (int i = 0, n = myblocks_count_blocks(); i < n; i++) {
 	myblocks_info_t info;
 	if (myblocks_info(i, &info))
-	  printf("%d: %lu %d %-8s %s%s\n", i,
+	  printf("%d: %0lx %d %-8s %s%s\n", i,
 		 info.uid, info.type, info.type_descr,
 		 info.descr, info.is_master?" ** MASTER **":"");
       }
