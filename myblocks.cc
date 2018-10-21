@@ -37,6 +37,7 @@ public:
   BlockFinder();
 
   // Our own stuff goes here.
+
   // Count the number of connected blocks.
   int CountBlocks();
   // Set the program to be run on the given block, given by its block number
@@ -65,10 +66,10 @@ private:
 BlockFinder::BlockFinder()
 {
   // Register to receive topologyChanged() callbacks from pts.
-  pts.addListener (this);
+  pts.addListener(this);
 }
 
-static String block_type(Block::Type t)
+static const char *block_type(Block::Type t)
 {
   switch (t) {
   case Block::lightPadBlock:
@@ -96,17 +97,19 @@ void BlockFinder::topologyChanged()
 
   // The blocks member of a BlockTopology contains an array of blocks. Here we
   // loop over them and print some information.
-  cout << ("\nNew BLOCKS topology. Detected " + String (currentTopology.blocks.size()) + " blocks:\n");
+  cout << "\nDetected " << currentTopology.blocks.size() << " blocks.\n";
 
   for (auto& block : currentTopology.blocks) {
-    cout << ("\n");
-    cout << ("    Type:          " + block_type(block->getType()) + "\n");
-    cout << ("    Description:   " + block->getDeviceDescription() + (block->isMasterBlock()?" ** MASTER BLOCK **":"") + "\n");
-    cout << ("    Battery level: " + String (block->getBatteryLevel()) + (block->isBatteryCharging()?" (charging)":" (charged)") + "\n");
-    cout << ("    UID:           " + String (block->uid) + "\n");
-    cout << ("    Serial number: " + block->serialNumber + "\n");
-    cout << ("    Config items:  " + String(block->getMaxConfigIndex()) + "\n");
+    cout << "\n";
+    cout << "    Type:          " << block_type(block->getType())
+	 << " (" << block->getType() << ")\n";
+    cout << "    Description:   " << block->getDeviceDescription()
+	 << (block->isMasterBlock()?" ** MASTER BLOCK **":"") << "\n";
+    cout << "    Battery level: " << block->getBatteryLevel() << "\n";
+    cout << "    UID:           " << block->uid << "\n";
+    cout << "    Serial number: " << block->serialNumber << "\n";
 #if 0
+    cout << "    Config items:  " << block->getMaxConfigIndex() << "\n";
     for (int i = 0; i < block->getMaxConfigIndex(); i++) {
       auto data = block->getLocalConfigMetaData(i);
       if (data.name == "") continue;
@@ -133,33 +136,30 @@ struct BlockProgram : Block::Program
 bool BlockFinder::SetProgram(int blocknum, bool save, String code,
 			     String& msg)
 {
-  for (auto& block : blocks) {
-    if (blocknum-- == 0) {
-      BlockProgram *prog = new BlockProgram(*block, code);
-      Result res = block->setProgram(prog);
-      if (res.failed()) {
-	msg = res.getErrorMessage();
-	return false;
-      } else {
-	if (save) block->saveProgramAsDefault();
-	msg = "Ok";
-	return true;
-      }
+  if (blocknum >= 0 && blocknum < blocks.size()) {
+    Block *block = blocks.getObjectPointerUnchecked(blocknum);
+    BlockProgram *prog = new BlockProgram(*block, code);
+    Result res = block->setProgram(prog);
+    if (res.failed()) {
+      msg = res.getErrorMessage();
+      return false;
+    } else {
+      if (save) block->saveProgramAsDefault();
+      msg = "Ok";
+      return true;
     }
-  }
-  return false;
+  } else
+    return false;
 }
 
 void BlockFinder::Reset(int blocknum, bool factory)
 {
-  for (auto& block : blocks) {
-    if (blocknum-- == 0) {
-      if (factory)
-	block->factoryReset();
-      else
-	block->blockReset();
-      return;
-    }
+  if (blocknum >= 0 && blocknum < blocks.size()) {
+    Block *block = blocks.getObjectPointerUnchecked(blocknum);
+    if (factory)
+      block->factoryReset();
+    else
+      block->blockReset();
   }
 }
 
