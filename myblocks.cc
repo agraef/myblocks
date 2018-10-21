@@ -296,6 +296,9 @@ extern "C" bool juce_process_events(void)
     return false;
 }
 
+
+// C API ---------------------------------------------------------------------
+
 extern "C" bool myblocks_changed()
 {
   if (app)

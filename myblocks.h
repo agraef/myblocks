@@ -33,6 +33,7 @@ extern void myblocks_factory_reset(int blocknum);
 // by myblocks_set_program() and myblocks_load_program(), "Ok" if no error.
 extern const char *myblocks_msg();
 
+// Retrieve information about blocks. This fills the following struct.
 typedef struct {
   // unique identifier of the block (may change between sessions?)
   uint64_t uid;
@@ -53,6 +54,9 @@ typedef struct {
 } myblocks_info_t;
 
 extern bool myblocks_info(int blocknum, myblocks_info_t *info);
+
+// XXXTODO: Operations to report touch and button events, and set LEDS and
+// button colors on the devices.
 
 #ifdef __cplusplus
 }
