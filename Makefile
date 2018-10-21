@@ -1,29 +1,57 @@
 
-# This requires GNU make. You'll also need Lua 5.x to build the Lua module
-# (tested with Lua 5.3).
+# This requires GNU make and pkg-config. You'll also need Lua 5.x to build the
+# Lua module (tested with Lua 5.3).
 
 # First run 'make checkout' to check out the submodules with the required
 # BLOCKS SDK and the Littlefoot examples. Then run 'make' to build everything,
 # or 'make testblocks' to just build the C test program (this doesn't need
-# Lua). See testblocks.lua for information on how to run the Lua version of
-# the test program (the C version of the program works the same). The C API is
-# in myblocks.cc, the Lua interface in myblocks_lua.c. The generated Lua
-# module is in myblocks.so after running 'make'. The testblocks.lua script
-# shows how to use the provided operations.
+# Lua). The C API is in myblocks.cc, the Lua interface in myblocks_lua.c. The
+# generated Lua module is in myblocks.so after running 'make'.
+
+# The testblocks.lua script shows how to use the provided operations. Also see
+# the comments at the beginning of the script for instructions on how to use
+# the test program (the C version of the program works the same).
+
+# NOTE: The SDK will be built automatically, but you can also run 'make SDK'
+# to have it built beforehand. Also, you can specify 'CONFIG=Release' if you
+# want to build the release version of the SDK (CONFIG=Debug is the default).
+# If for some reason you prefer to build the SDK manually, make sure that the
+# SDK modules are compiled with -fPIC, otherwise building the Lua module will
+# fail. The 'SDK' target takes care of all this automatically.
+
+# Set this to Release for a release build of the SDK.
+CONFIG = Debug
 
 SDKPATH = BLOCKS-SDK/SDK
-SDKLIB = $(SDKPATH)/Build/Linux/Debug/libBLOCKS-SDK.a
+SDKLIB = $(SDKPATH)/Build/Linux/$(CONFIG)/libBLOCKS-SDK.a
 
-INCLUDES = -I$(SDKPATH) $(shell pkg-config --cflags lua)
-LIBS = -lpthread -ldl -lasound $(shell pkg-config --libs lua)
+INCLUDES = -I$(SDKPATH)
+LIBS = -lpthread -ldl -lasound -lm
+TARGETS = testblocks
+
+# Check to see whether we have Lua installed. We only try to build the Lua
+# module if that's the case.
+LUALIBS := $(shell pkg-config --libs lua 2>/dev/null)
+ifneq ($(LUALIBS),)
+INCLUDES += $(shell pkg-config --cflags lua)
+LIBS += $(LUALIBS)
+TARGETS += myblocks.so
+endif
 
 CC = gcc
 CFLAGS = -g -O2 -fPIC
 CXX = gcc
 CXXFLAGS = -g -O2 -fPIC
-CPPFLAGS = $(INCLUDES) -DJUCE_DEBUG=1
+CPPFLAGS = $(INCLUDES)
 
-all: myblocks.so testblocks
+ifeq ($(CONFIG),Release)
+CPPFLAGS += -DJUCE_DEBUG=0
+else
+CPPFLAGS += -DJUCE_DEBUG=1
+endif
+
+# Compile targets for the test program and Lua module.
+all: $(TARGETS)
 
 myblocks.so: myblocks.o $(SDKLIB) myblocks_lua.o
 	$(CXX) -shared -fPIC -o $@ $^ $(LIBS) -lstdc++
@@ -33,16 +61,24 @@ testblocks: testblocks.o myblocks.o $(SDKLIB)
 
 myblocks.o: myblocks.h
 
-$(SDKLIB):
-	$(MAKE) -C $(SDKPATH)/Build/Linux CXX="g++ -fPIC"
+# Compile the SDK.
+SDK: $(SDKLIB)
 
-# Checkout the submodules (SDK etc.), you need to do this first!
+$(SDKLIB):
+	$(MAKE) -C $(SDKPATH)/Build/Linux DEPFLAGS="-fPIC" CONFIG=$(CONFIG)
+
+# Check out the submodules (SDK etc.), you need to do this first!
 checkout:
 	git submodule update --init
 
+# Clean targets.
 clean:
 	rm -f *.o myblocks.so testblocks
 
-# Also get rid of the submodules.
+# Also clean the SDK.
 realclean: clean
+	$(MAKE) -C $(SDKPATH)/Build/Linux CONFIG=$(CONFIG) clean
+
+# Also get rid of the submodules.
+distclean: clean
 	git submodule deinit --all -f
