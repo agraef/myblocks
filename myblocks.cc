@@ -38,20 +38,31 @@ public:
 
   // Our own stuff goes here.
 
+  // Flag indicating whether the topology has changed since the last time.
+  bool Changed();
   // Count the number of connected blocks.
   int CountBlocks();
-  // Set the program to be run on the given block, given by its block number
-  // (it looks like block #0 always denotes the master block). If save is
-  // true, commit the program to permanent storage so that it remains loaded
-  // even after the connection is broken or when the block is restarted, until
-  // another program is loaded or a factory reset is performed (see below).
-  // The Littlefoot code is in the code parameter. Returns true iff the
-  // program was loaded successfully (in which case msg will be "Ok"), or
-  // returns the error message from the compiler in msg.
-  bool SetProgram(int blocknum, bool save, String code, String &msg);
-  // Resets the given block. If factory is true, performs a factory reset,
-  // which on a Lightpad block reloads the default note grid app.
-  void Reset(int blocknum, bool factory);
+  // Get a block, given by its block number (it looks like block #0 always
+  // denotes the master block). The returned pointer is for immediate use and
+  // only remains valid until the toplogy is updated, as indicated by the
+  // Changed() flag.
+  Block *GetBlock(int blocknum);
+  // Set the program to be run on the given block. The Littlefoot code is in
+  // the code parameter. Returns true iff the program was loaded successfully
+  // (in which case msg will be "Ok"), or returns the error message from the
+  // compiler in msg.
+  bool SetProgram(int blocknum, String code, String &msg);
+  // Commit the currently loaded program to permanent storage so that it
+  // remains loaded even after the connection is broken or when the block is
+  // restarted, until another program is loaded or a factory reset is
+  // performed (see below).
+  void SaveProgram(int blocknum);
+  // Resets the given block. Not sure what this actually does, maybe it resets
+  // the variable memory and restarts the program running on the block?
+  void Reset(int blocknum);
+  // Performs a factory reset of the block, which on a Lightpad block reloads
+  // the default note grid app.
+  void FactoryReset(int blocknum);
 
 private:
   // Called by the PhysicalTopologySource when the BLOCKS topology changes.
@@ -61,12 +72,14 @@ private:
   PhysicalTopologySource pts;
 
   Block::Array blocks;
+  bool changed;
 };
  
 BlockFinder::BlockFinder()
 {
   // Register to receive topologyChanged() callbacks from pts.
   pts.addListener(this);
+  changed = false;
 }
 
 static const char *block_type(Block::Type t)
@@ -95,6 +108,7 @@ void BlockFinder::topologyChanged()
   // variable.
   auto currentTopology = pts.getCurrentTopology();
 
+#if 0
   // The blocks member of a BlockTopology contains an array of blocks. Here we
   // loop over them and print some information.
   cout << "\nDetected " << currentTopology.blocks.size() << " blocks.\n";
@@ -117,13 +131,30 @@ void BlockFinder::topologyChanged()
     }
 #endif
   }
+#endif
 
   blocks = currentTopology.blocks;
+  changed = true;
+}
+
+bool BlockFinder::Changed()
+{
+  bool res = changed;
+  changed = false;
+  return res;
 }
 
 int BlockFinder::CountBlocks()
 {
   return blocks.size();
+}
+
+Block *BlockFinder::GetBlock(int blocknum)
+{
+  if (blocknum >= 0 && blocknum < blocks.size())
+    return blocks.getObjectPointerUnchecked(blocknum);
+  else
+    return 0;
 }
 
 struct BlockProgram : Block::Program
@@ -133,8 +164,17 @@ struct BlockProgram : Block::Program
   String code;
 };
 
-bool BlockFinder::SetProgram(int blocknum, bool save, String code,
-			     String& msg)
+// XXXFIXME: Due to limitations in the BLOCKS SDK, SetProgram() isn't quite
+// the same as what the Roli Dashboard or the IDE does, which apparently have
+// some hidden magic built into them to pick up the XML configuration data in
+// the code. I couldn't find this in the SDK anywhere, so all SetProgram()
+// currently does is compile and load the program on the block. This will
+// generally only work with simple, self-contained programs which don't rely
+// on any configuration data (some programs which only need the factory
+// configuration data will work as well). Otherwise you'll get an error
+// message indicating that some variable was not defined.
+
+bool BlockFinder::SetProgram(int blocknum, String code, String& msg)
 {
   if (blocknum >= 0 && blocknum < blocks.size()) {
     Block *block = blocks.getObjectPointerUnchecked(blocknum);
@@ -144,7 +184,6 @@ bool BlockFinder::SetProgram(int blocknum, bool save, String code,
       msg = res.getErrorMessage();
       return false;
     } else {
-      if (save) block->saveProgramAsDefault();
       msg = "Ok";
       return true;
     }
@@ -152,14 +191,29 @@ bool BlockFinder::SetProgram(int blocknum, bool save, String code,
     return false;
 }
 
-void BlockFinder::Reset(int blocknum, bool factory)
+void BlockFinder::SaveProgram(int blocknum)
 {
   if (blocknum >= 0 && blocknum < blocks.size()) {
     Block *block = blocks.getObjectPointerUnchecked(blocknum);
-    if (factory)
-      block->factoryReset();
-    else
-      block->blockReset();
+    block->saveProgramAsDefault();
+  }
+}
+
+void BlockFinder::Reset(int blocknum)
+{
+  if (blocknum >= 0 && blocknum < blocks.size()) {
+    Block *block = blocks.getObjectPointerUnchecked(blocknum);
+    block->blockReset();
+  }
+}
+
+void BlockFinder::FactoryReset(int blocknum)
+{
+  if (blocknum >= 0 && blocknum < blocks.size()) {
+    Block *block = blocks.getObjectPointerUnchecked(blocknum);
+    block->factoryReset();
+    // Once is not enough?
+    block->factoryReset();
   }
 }
 
@@ -237,6 +291,14 @@ extern "C" bool juce_process_events(void)
     return false;
 }
 
+extern "C" bool myblocks_changed()
+{
+  if (app)
+    return app->finder.Changed();
+  else
+    return false;
+}
+
 extern "C" int myblocks_count_blocks()
 {
   if (app)
@@ -251,11 +313,11 @@ extern "C" const char *myblocks_msg()
   return myblocks_msg_string.c_str();
 }
 
-extern "C" bool myblocks_set_program(int blocknum, bool save, const char *code)
+extern "C" bool myblocks_set_program(int blocknum, const char *code)
 {
   if (app) {
     String msg;
-    bool res = app->finder.SetProgram(blocknum, save, code, msg);
+    bool res = app->finder.SetProgram(blocknum, code, msg);
     myblocks_msg_string = msg.toStdString();
     return res;
   } else {
@@ -267,8 +329,7 @@ extern "C" bool myblocks_set_program(int blocknum, bool save, const char *code)
 #include <sys/types.h>
 #include <sys/stat.h>
 
-extern "C" bool myblocks_load_program(int blocknum, bool save,
-				      const char *filename)
+extern "C" bool myblocks_load_program(int blocknum, const char *filename)
 {
   struct stat st;
   if (stat(filename, &st)) {
@@ -280,7 +341,7 @@ extern "C" bool myblocks_load_program(int blocknum, bool save,
   FILE *fp = fopen(filename, "r");
   if (fp && fread(code, 1, st.st_size, fp) == (size_t)st.st_size) {
     fclose(fp);
-    bool res = myblocks_set_program(blocknum, save, code);
+    bool res = myblocks_set_program(blocknum, code);
     free(code);
     return res;
   } else {
@@ -292,7 +353,42 @@ extern "C" bool myblocks_load_program(int blocknum, bool save,
   }
 }
 
-extern "C" void myblocks_reset(int blocknum, bool factory)
+extern "C" void myblocks_save_program(int blocknum)
 {
-  if (app) app->finder.Reset(blocknum, factory);
+  if (app) app->finder.SaveProgram(blocknum);
+}
+
+extern "C" void myblocks_reset(int blocknum)
+{
+  if (app) app->finder.Reset(blocknum);
+}
+
+extern "C" void myblocks_factory_reset(int blocknum)
+{
+  if (app) app->finder.FactoryReset(blocknum);
+}
+
+// NOTE: The string fields in the info struct are all in static storage and
+// will be overridden the next time the operation is invoked.
+extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
+{
+  if (app) {
+    static std::string descr, serial, version;
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block || !info) return false;
+    descr = block->getDeviceDescription().toStdString();
+    serial = block->serialNumber.toStdString();
+    version = block->versionNumber.toStdString();
+    info->uid = block->uid;
+    info->type = block->getType();
+    info->descr = descr.c_str();
+    info->serial = serial.c_str();
+    info->version = version.c_str();
+    info->type_descr = block_type((Block::Type)info->type);
+    info->battery_level = block->getBatteryLevel();
+    info->is_charging = block->isBatteryCharging();
+    info->is_master = block->isMasterBlock();
+    return true;
+  } else
+    return false;
 }
