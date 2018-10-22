@@ -12,6 +12,10 @@
 # the comments at the beginning of the script for instructions on how to use
 # the test program (the C version of the program works the same).
 
+# There's also a Pd external blocks.pd_lua available, along with a help patch
+# blocks-help.pd. Pd-Lua is required to run this. You can also install the
+# external (along with the help patch and the Lua module) with 'make install'.
+
 # NOTE: The SDK will be built automatically, but you can also run 'make SDK'
 # to have it built beforehand. Also, you can specify 'CONFIG=Release' if you
 # want to build the release version of the SDK (CONFIG=Debug is the default).
@@ -82,3 +86,15 @@ realclean: clean
 # Also get rid of the submodules.
 distclean: clean
 	git submodule deinit --all -f
+
+# Installation of the Pd external.
+prefix = /usr
+installdir = $(prefix)/lib/pd-externals/blocks
+installfiles = blocks.pd_lua blocks-help.pd myblocks.so Pacman.littlefoot
+
+install:
+	mkdir -p $(DESTDIR)$(installdir)
+	cp $(installfiles) $(DESTDIR)$(installdir)
+
+uninstall:
+	rm -rf $(DESTDIR)$(installdir)
