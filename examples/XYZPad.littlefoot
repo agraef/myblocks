@@ -1,0 +1,55 @@
+
+int backgroundColour, textColour, colour;
+int channel, send, xCC, yCC, zCC;
+
+void initialise()
+{
+  // colours 
+  backgroundColour = 0xff000044; //0xFFE8486B;
+  textColour = 0xffffffff; //0xFF000000;
+  colour = 0x94ffff00; //0x94594061;
+  // CC assignments
+  channel = 0; // MIDI channel (0-based)
+  send = 0; // 1 = x, 2 = y, 3 = z, 0 = all
+  xCC = 1; yCC = 2; zCC = 3; // controller numbers to use
+}
+
+int mapTouchToRange (float v, float inMin, float inMax, float outMax)
+{
+  return int (map (v, inMin / 100.0, inMax / 100.0, 0.0, outMax));
+}
+
+void outputCC (float v, int cc, float inMin, float inMax, bool invert)
+{
+  int value = mapTouchToRange (v, inMin, inMax, 127.0);
+  if (invert) value = 127 - value;
+  sendCC (channel, cc, value);
+}
+
+void handleTouch (int index, float x, float y, float z, float scale)
+{
+  if (index == 1) {
+    addPressurePoint (colour, x, y, z * scale);
+    // send MIDI CCs
+    if (send == 0 || send == 1) outputCC (x, xCC, 7.0, 193.0, false);
+    if (send == 0 || send == 2) outputCC (y, yCC, 7.0, 193.0, true);
+    if (send == 0 || send == 3) outputCC (z, zCC, 0.0, 100.0, false);
+  }
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+  handleTouch (index, x, y, z, 75.0);
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+  handleTouch (index, x, y, z, 20.0);
+}
+
+void repaint()
+{
+  fillRect (backgroundColour, 0, 0, 15, 15);
+  drawPressureMap();
+  fadePressureMap();
+}
