@@ -122,7 +122,8 @@ void BlockFinder::topologyChanged()
 	 << " (" << block->getType() << ")\n";
     cout << "    Description:   " << block->getDeviceDescription()
 	 << (block->isMasterBlock()?" ** MASTER BLOCK **":"") << "\n";
-    cout << "    Battery level: " << block->getBatteryLevel() << "\n";
+    cout << "    Battery level: " << block->getBatteryLevel()
+	 << (block->isBatteryCharging()?" (charging)":" (charged)") << "\n";
     cout << "    UID:           " << String::toHexString(block->uid) << "\n";
     cout << "    Serial number: " << block->serialNumber << "\n";
 #if 0
