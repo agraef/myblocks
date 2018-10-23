@@ -90,11 +90,11 @@ distclean: clean
 # Installation of the Pd external.
 prefix = /usr
 installdir = $(prefix)/lib/pd-externals/blocks
-installfiles = blocks.pd_lua blocks-help.pd myblocks.so Pacman.littlefoot
+installfiles = blocks.pd_lua blocks-*.pd myblocks.so examples
 
 install:
 	mkdir -p $(DESTDIR)$(installdir)
-	cp $(installfiles) $(DESTDIR)$(installdir)
+	cp -r $(installfiles) $(DESTDIR)$(installdir)
 
 uninstall:
 	rm -rf $(DESTDIR)$(installdir)
