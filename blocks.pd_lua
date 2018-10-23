@@ -43,7 +43,7 @@ function MB:in_1_info(atoms)
       -- number, is converted to a symbol (hex representation).
       return {i, info.type,
 	      info.is_master and 1 or 0, info.is_charging and 1 or 0,
-	      info.battery_level,
+	      info.battery_level, info.nbuttons, info.nleds,
 	      info.descr, info.type_descr, info.serial, info.version,
 	      string.format("%0x", info.uid)}
    end
@@ -82,20 +82,20 @@ end
 function MB:in_1_load(atoms)
    if type(atoms[1]) == "number" and type(atoms[2]) == "string" then
       if not myblocks.load_program(atoms[1], atoms[2]) then
-	 self:error("myblocks: " .. myblocks.msg())
+	 self:error("blocks: " .. myblocks.msg())
       end
    else
-      self:error("myblocks: save expects the block number as argument")
+      self:error("blocks: save expects the block number as argument")
    end
 end
 
 function MB:in_1_set(atoms)
    if type(atoms[1]) == "number" and type(atoms[2]) == "string" then
       if not myblocks.set_program(atoms[1], atoms[2]) then
-	 self:error("myblocks: " .. myblocks.msg())
+	 self:error("blocks: " .. myblocks.msg())
       end
    else
-      self:error("myblocks: save expects the block number as argument")
+      self:error("blocks: save expects the block number as argument")
    end
 end
 
@@ -103,13 +103,68 @@ function MB:in_1_save(atoms)
    if type(atoms[1]) == "number" then
       myblocks.save_program(atoms[1])
    else
-      self:error("myblocks: save expects the block number as argument")
+      self:error("blocks: save expects the block number as argument")
+   end
+end
+
+function MB:in_1_msg(atoms)
+   local n = #atoms
+   local ok = n > 1
+   if ok then
+      for i = 1, n do
+	 ok = type(atoms[i]) == "number"
+	 if not ok then break end
+      end
+   end
+   if ok then
+      local t = table.pack(table.unpack(atoms, 2))
+      myblocks.send(atoms[1], t)
+   else
+      self:error("blocks: msg expects a block number followed by a list of numbers")
+   end
+end
+
+function MB:in_1_button(atoms)
+   local blocknum = atoms[1]
+   local num = atoms[2]
+   local color = atoms[3]
+   if type(blocknum) == "number" and type(num) == "number" and
+      type(color) == "number" then
+      myblocks.set_button(blocknum, num, color)
+   else
+      self:error("blocks: button expects a block number followed by a button number and a color")
+   end
+end
+
+function MB:in_1_leds(atoms)
+   local blocknum = atoms[1]
+   local num = atoms[2]
+   local color = atoms[3]
+   if type(blocknum) == "number" and type(num) == "number" and
+      type(color) == "number" then
+      myblocks.set_leds(blocknum, num, color)
+   else
+      self:error("blocks: leds expects a block number followed by an led number and a color")
    end
 end
 
 function MB:tick()
    if myblocks.process() and myblocks.changed() then
       self:outlet(2, "float", {myblocks.count_blocks()})
+   end
+   local i, msg = myblocks.receive()
+   while i ~= nil do
+      if msg.name ~= nil then
+	 -- button
+	 print(string.format("%d: button %d %d (%s) %d", i, msg.num,
+			     msg.type, msg.name, msg.pressed and 1 or 0))
+	 self:outlet(1, "button", { i, msg.num, msg.name, msg.type,
+				    msg.pressed and 1 or 0 })
+      else
+	 -- program message
+	 self:outlet(1, "msg", { i, table.unpack(msg) })
+      end
+      i, msg = myblocks.receive()
    end
    self.clock:delay(self.period)
 end

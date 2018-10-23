@@ -1,8 +1,29 @@
 #include <iostream>
 #include <BlocksHeader.h>
 
+#include "myblocks.h"
+
 using namespace std;
 using namespace juce;
+
+struct Msg
+{
+  int n;       // block number
+  int msg[3];  // program message (sendMessageToHost)
+  int button;  // 0 = message, 1 = button pressed, 2 = button released
+  int num;     // button number
+  int type;    // button type
+  String name; // button name
+  LinkedListPointer<Msg> nextListItem;
+  Msg(int k, int x, int y, int z) {
+    n = k; button = num = type = 0;
+    msg[0] = x; msg[1] = y; msg[2] = z;
+  }
+  Msg(int k, int _button, int _num, int _type, String _name) {
+    n = k; button = _button; num = _num; type = _type; name = _name;
+    msg[0] = msg[1] = msg[2] = 0;
+  }
+};
 
 /*
   ==============================================================================
@@ -29,17 +50,20 @@ using namespace juce;
 // connected blocks in a convenient way, so we simply add in our own access
 // operations here.
 
-class BlockFinder : private TopologySource::Listener
+class BlockFinder : private TopologySource::Listener,
+		    private Block::ProgramEventListener,
+		    private ControlButton::Listener
 {
 public:
-  // Register as a listener to the PhysicalTopologySource, so that we receive
-  // callbacks in topologyChanged().
   BlockFinder();
 
   // Our own stuff goes here.
 
   // Flag indicating whether the topology has changed since the last time.
   bool Changed();
+  // Get a message received from a block.
+  bool GetMsg(int &blocknum, int msg[3],
+	      myblocks_button_info_t &button_info);
   // Count the number of connected blocks.
   int CountBlocks();
   // Get a block, given by its block number (it looks like block #0 always
@@ -47,6 +71,8 @@ public:
   // only remains valid until the toplogy is updated, as indicated by the
   // Changed() flag.
   Block *GetBlock(int blocknum);
+  // Get a button of a (control) block.
+  ControlButton *GetButton(Block *block, int num);
   // Set the program to be run on the given block. The Littlefoot code is in
   // the code parameter. Returns true iff the program was loaded successfully
   // (in which case msg will be "Ok"), or returns the error message from the
@@ -65,6 +91,13 @@ public:
   void FactoryReset(int blocknum);
 
 private:
+  // Called by blocks when receiving a program event.
+  void handleProgramEvent(Block &source, const Block::ProgramEventMessage&);
+
+  // Called by blocks when a button is pressed/released.
+  void buttonPressed(ControlButton& button, Block::Timestamp ts) override;
+  void buttonReleased(ControlButton& button, Block::Timestamp ts) override;
+
   // Called by the PhysicalTopologySource when the BLOCKS topology changes.
   void topologyChanged() override;
 
@@ -73,8 +106,13 @@ private:
 
   Block::Array blocks;
   bool changed;
+  // Our message queue is a linked list for now, might want to do something
+  // more sophisticated here in the future.
+  LinkedListPointer<Msg> msgs;
+  int find_block(Block &block);
+  int find_button(Block &block, ControlButton &button);
 };
- 
+
 BlockFinder::BlockFinder()
 {
   // Register to receive topologyChanged() callbacks from pts.
@@ -102,6 +140,56 @@ static const char *block_type(Block::Type t)
   }
 }
 
+int BlockFinder::find_block(Block &block)
+{
+  int blocknum = 0;
+  for (auto& b : blocks) {
+    if (*b == block) break;
+    blocknum++;
+  }
+  return blocknum;
+}
+
+int BlockFinder::find_button(Block &block, ControlButton &button)
+{
+  int num = 0;
+  for (auto b : block.getButtons()) {
+    if (b == &button) break;
+    num++;
+  }
+  return num;
+}
+
+void BlockFinder::handleProgramEvent(Block &block,
+				     const Block::ProgramEventMessage &ev)
+{
+  int blocknum = find_block(block);
+#if 0
+  printf("%d: %d %d %d\n", blocknum, ev.values[0], ev.values[1], ev.values[2]);
+#endif
+  msgs.append(new Msg(blocknum, ev.values[0], ev.values[1], ev.values[2]));
+}
+
+void BlockFinder::buttonPressed(ControlButton& button, Block::Timestamp ts)
+{
+  int blocknum = find_block(button.block);
+  int num = find_button(button.block, button);
+#if 0
+  cout << blocknum << ": button pressed: " << button.getType() << " (" << button.getName() << ") x = " << button.getPositionX() <<  " y = " << button.getPositionY() <<  " light? " << button.hasLight() << "\n";
+#endif
+  msgs.append(new Msg(blocknum, 1, num, button.getType(), button.getName()));
+}
+
+void BlockFinder::buttonReleased(ControlButton& button, Block::Timestamp ts)
+{
+  int blocknum = find_block(button.block);
+  int num = find_button(button.block, button);
+#if 0
+  cout << blocknum << ": button released: " << button.getType() << " (" << button.getName() << ") x = " << button.getPositionX() <<  " y = " << button.getPositionY() <<  " light? " << button.hasLight() << "\n";
+#endif
+  msgs.append(new Msg(blocknum, 2, num, button.getType(), button.getName()));
+}
+
 void BlockFinder::topologyChanged()
 {
   // We have a new topology, so find out what it is and store it in a local
@@ -110,6 +198,14 @@ void BlockFinder::topologyChanged()
 
   blocks = currentTopology.blocks;
   changed = true;
+  msgs.deleteAll();
+
+  // Add program event and button listeners.
+  for (auto& block : blocks) {
+    block->addProgramEventListener(this);
+    for (auto button : block->getButtons())
+      button->addListener(this);
+  }
 
 #if 0
   // The blocks member of a BlockTopology contains an array of blocks. Here we
@@ -155,10 +251,42 @@ int BlockFinder::CountBlocks()
   return blocks.size();
 }
 
+bool BlockFinder::GetMsg(int &blocknum, int msg[3],
+			 myblocks_button_info_t &button_info)
+{
+  Msg *front = msgs.removeNext();
+  if (front) {
+    blocknum = front->n;
+    if (front->button) {
+      static std::string name;
+      name = front->name.toStdString();
+      button_info.name = name.c_str();
+      button_info.num = front->num;
+      button_info.type = front->type;
+      button_info.pressed = front->button == 1;
+      memset(msg, 0, 3*sizeof(int));
+    } else {
+      button_info = { .name = 0 };
+      memcpy(msg, front->msg, 3*sizeof(int));
+    }
+    delete front;
+    return true;
+  } else
+    return false;
+}
+
 Block *BlockFinder::GetBlock(int blocknum)
 {
   if (blocknum >= 0 && blocknum < blocks.size())
     return blocks.getObjectPointerUnchecked(blocknum);
+  else
+    return 0;
+}
+
+ControlButton *BlockFinder::GetButton(Block *block, int num)
+{
+  if (num >= 0 && num < block->getButtons().size())
+    return block->getButtons().getUnchecked(num);
   else
     return 0;
 }
@@ -261,8 +389,6 @@ static MyJUCEApp *app;
 
 // Helper functions to initialize and finalize the app and run its event loop
 // in a piecemeal fashion.
-
-#include "myblocks.h"
 
 extern "C" void juce_init(void)
 {
@@ -395,6 +521,18 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     info->battery_level = block->getBatteryLevel();
     info->is_charging = block->isBatteryCharging();
     info->is_master = block->isMasterBlock();
+    if (block->getType() == Block::liveBlock ||
+	block->getType() == Block::loopBlock ||
+	block->getType() == Block::developerControlBlock ||
+	block->getType() == Block::touchBlock) {
+      info->nbuttons = block->getButtons().size();
+      if (auto ledRow = block->getLEDRow())
+	info->nleds = ledRow->getNumLEDs();
+      else
+	info->nleds = 0;
+    } else {
+      info->nbuttons = info->nleds = 0;
+    }
     if (Block::Program *prog = block->getProgram()) {
       code = prog->getLittleFootProgram().toStdString();
       info->code = code.c_str();
@@ -403,4 +541,57 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     return true;
   } else
     return false;
+}
+
+extern "C" void myblocks_send(int blocknum, int msg[3])
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block) return;
+    Block::ProgramEventMessage ev = { msg[0], msg[1], msg[2] };
+    block->sendProgramEvent(ev);
+  }
+}
+
+extern "C" bool myblocks_receive(int *blocknum, int msg[3],
+				 myblocks_button_info_t *button_info)
+{
+  if (app)
+    return app->finder.GetMsg(*blocknum, msg, *button_info);
+  else
+    return false;
+}
+
+extern "C" void myblocks_set_button(int blocknum, int num, unsigned color)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block ||
+	!(block->getType() == Block::liveBlock ||
+	  block->getType() == Block::loopBlock ||
+	  block->getType() == Block::developerControlBlock ||
+	  block->getType() == Block::touchBlock))
+      return;
+    auto button = app->finder.GetButton(block, num);
+    if (!button) return;
+    if (button->hasLight())
+      button->setLightColour(color);
+  }
+}
+
+extern "C" void myblocks_set_leds(int blocknum, int num, unsigned color)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block ||
+	!(block->getType() == Block::liveBlock ||
+	  block->getType() == Block::loopBlock ||
+	  block->getType() == Block::developerControlBlock ||
+	  block->getType() == Block::touchBlock))
+      return;
+    auto ledRow = block->getLEDRow();
+    if (!ledRow) return;
+    for (int i = 0; i < ledRow->getNumLEDs(); ++i)
+      ledRow->setLEDColour(i, (i < num) ? color : 0);
+  }
 }

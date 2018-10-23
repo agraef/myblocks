@@ -63,10 +63,23 @@ function main()
 	 local n = myblocks.count_blocks()
 	 for i = 0, n-1 do
 	    local info = myblocks.info(i)
-	    print(string.format("%d: %0x %d %-8s %s%s", i, info.uid,
-				info.type, info.type_descr, info.descr,
+	    print(string.format("%d: %0x %d %-8s %2d %2d %s%s", i, info.uid,
+				info.type, info.type_descr,
+				info.nbuttons, info.nleds, info.descr,
 				info.is_master and " ** MASTER **" or ""))
 	 end
+      end
+      local i, msg = myblocks.receive()
+      while i ~= nil do
+	 if msg.name ~= nil then
+	    -- button
+	    print(string.format("%d: button %d %d (%s) %d", i, msg.num,
+				msg.type, msg.name, msg.pressed and 1 or 0))
+	 else
+	    -- program message
+	    print(string.format("%d: msg %d %d %d", i, msg[1], msg[2], msg[3]))
+	 end
+	 i, msg = myblocks.receive()
       end
       myblocks.msleep(10)
    end

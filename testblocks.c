@@ -46,11 +46,20 @@ int main(int argc, char *argv[])
       for (int i = 0, n = myblocks_count_blocks(); i < n; i++) {
 	myblocks_info_t info;
 	if (myblocks_info(i, &info))
-	  printf("%d: %0lx %d %-8s %s%s\n", i,
+	  printf("%d: %0lx %d %-8s %2d %2d %s%s\n", i,
 		 info.uid, info.type, info.type_descr,
+		 info.nbuttons, info.nleds,
 		 info.descr, info.is_master?" ** MASTER **":"");
       }
     }
+    int blocknum, msg[3];
+    myblocks_button_info_t button_info;
+    while (myblocks_receive(&blocknum, msg, &button_info))
+      if (button_info.name)
+	printf("%d: button %d %d (%s) %d\n", blocknum, button_info.num,
+	       button_info.type, button_info.name, button_info.pressed);
+      else
+	printf("%d: msg %d %d %d\n", blocknum, msg[0], msg[1], msg[2]);
     usleep(1000);
   }
   printf("No more connected blocks, exiting.\n");

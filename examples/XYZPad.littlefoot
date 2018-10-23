@@ -14,6 +14,14 @@ void initialise()
   xCC = 1; yCC = 2; zCC = 3; // controller numbers to use
 }
 
+void handleMessage(int which, int rgb, int unused)
+{
+  if (which)
+    colour = (colour & 0xff000000) | rgb;
+  else
+    backgroundColour = (backgroundColour & 0xff000000) | rgb;
+}
+
 int mapTouchToRange (float v, float inMin, float inMax, float outMax)
 {
   return int (map (v, inMin / 100.0, inMax / 100.0, 0.0, outMax));
@@ -30,6 +38,9 @@ void handleTouch (int index, float x, float y, float z, float scale)
 {
   if (index == 1) {
     addPressurePoint (colour, x, y, z * scale);
+    sendMessageToHost (mapTouchToRange (x, 7.0, 193.0, 127.0),
+		       127 - mapTouchToRange (y, 7.0, 193.0, 127.0),
+		       mapTouchToRange (z, 0.0, 100.0, 127.0));
     // send MIDI CCs
     if (send == 0 || send == 1) outputCC (x, xCC, 7.0, 193.0, false);
     if (send == 0 || send == 2) outputCC (y, yCC, 7.0, 193.0, true);

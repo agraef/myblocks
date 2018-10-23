@@ -43,6 +43,8 @@ typedef struct {
   bool is_master, is_charging;
   // current battery level
   float battery_level;
+  // number of buttons and size of the LED strip, if any (control blocks)
+  int nbuttons, nleds;
   // Various useful textual information (block description, human-readable
   // description of the block type, serial number, version number of firmware,
   // Littlefoot code running on the device if any). NOTE: These fields all
@@ -54,6 +56,18 @@ typedef struct {
 } myblocks_info_t;
 
 extern bool myblocks_info(int blocknum, myblocks_info_t *info);
+
+typedef struct {
+  const char *name; // non-null indicates a button
+  int num, type;    // button number and type
+  bool pressed;     // true => pressed, false => released
+} myblocks_button_info_t;
+
+extern void myblocks_set_button(int blocknum, int num, unsigned color);
+extern void myblocks_set_leds(int blocknum, int num, unsigned color);
+extern void myblocks_send(int blocknum, int msg[3]);
+extern bool myblocks_receive(int *blocknum, int msg[3],
+			     myblocks_button_info_t *button_info);
 
 // XXXTODO: Operations to report touch and button events, and set LEDS and
 // button colors on the devices.

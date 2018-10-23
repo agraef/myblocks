@@ -97,7 +97,7 @@ static int l_info(lua_State *L)
   int blocknum = lua_tointeger(L, -1);
   myblocks_info_t info;
   if (myblocks_info(blocknum, &info)) {
-    lua_createtable(L, 7, 0);
+    lua_createtable(L, 11, 0);
     lua_pushstring(L, "uid");
     lua_pushinteger(L, info.uid);
     lua_settable(L, -3);
@@ -112,6 +112,12 @@ static int l_info(lua_State *L)
     lua_settable(L, -3);
     lua_pushstring(L, "battery_level");
     lua_pushnumber(L, info.battery_level);
+    lua_settable(L, -3);
+    lua_pushstring(L, "nbuttons");
+    lua_pushinteger(L, info.nbuttons);
+    lua_settable(L, -3);
+    lua_pushstring(L, "nleds");
+    lua_pushinteger(L, info.nleds);
     lua_settable(L, -3);
     lua_pushstring(L, "descr");
     lua_pushstring(L, info.descr);
@@ -136,6 +142,80 @@ static int l_info(lua_State *L)
   return 1;
 }
 
+static int l_set_button(lua_State *L)
+{
+  int blocknum = lua_tointeger(L, 1);
+  int num = lua_tointeger(L, 2);
+  unsigned color = lua_tointeger(L, 3);
+  myblocks_set_button(blocknum, num, color);
+  return 0;
+}
+
+static int l_set_leds(lua_State *L)
+{
+  int blocknum = lua_tointeger(L, 1);
+  int num = lua_tointeger(L, 2);
+  unsigned color = lua_tointeger(L, 3);
+  myblocks_set_leds(blocknum, num, color);
+  return 0;
+}
+
+static int l_send(lua_State *L)
+{
+  if (!lua_isnumber(L, 1) || !lua_istable(L, 2)) return 0;
+  int blocknum = lua_tointeger(L, 1);
+  size_t len = lua_rawlen(L, 2);
+  if (len == 0) return 0;
+  int msg[3] = { 0, 0, 0 };
+  for (size_t i = 0; i < 3 && i < len; i++) {
+    if (lua_rawgeti(L, 2, i+1) != LUA_TNUMBER) return 0;
+    msg[i] = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  myblocks_send(blocknum, msg);
+  return 0;
+}
+
+static int l_receive(lua_State *L)
+{
+  int blocknum, msg[3];
+  myblocks_button_info_t button_info;
+  if (myblocks_receive(&blocknum, msg, &button_info)) {
+    lua_pushinteger(L, blocknum);
+    if (button_info.name) {
+      lua_createtable(L, 4, 0);
+      lua_pushstring(L, "name");
+      lua_pushstring(L, button_info.name);
+      lua_settable(L, -3);
+      lua_pushstring(L, "num");
+      lua_pushinteger(L, button_info.num);
+      lua_settable(L, -3);
+      lua_pushstring(L, "type");
+      lua_pushinteger(L, button_info.type);
+      lua_settable(L, -3);
+      lua_pushstring(L, "pressed");
+      lua_pushboolean(L, button_info.pressed);
+      lua_settable(L, -3);
+    } else {
+      int i = 0;
+      lua_createtable(L, 3, 0);
+      lua_pushinteger(L, ++i);
+      lua_pushinteger(L, msg[0]);
+      lua_settable(L, -3);
+      lua_pushinteger(L, ++i);
+      lua_pushinteger(L, msg[1]);
+      lua_settable(L, -3);
+      lua_pushinteger(L, ++i);
+      lua_pushinteger(L, msg[2]);
+      lua_settable(L, -3);
+    }
+  } else {
+    lua_pushnil(L);
+    lua_pushnil(L);
+  }
+  return 2;
+}
+
 static const struct luaL_Reg l_myblocks [] = {
   {"msleep", l_msleep},
   {"start", l_start},
@@ -150,6 +230,10 @@ static const struct luaL_Reg l_myblocks [] = {
   {"factory_reset", l_factory_reset},
   {"msg", l_msg},
   {"info", l_info},
+  {"set_button", l_set_button},
+  {"set_leds", l_set_leds},
+  {"send", l_send},
+  {"receive", l_receive},
   {NULL, NULL}  /* sentinel */
 };
 
