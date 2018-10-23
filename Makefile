@@ -2,11 +2,11 @@
 # This requires GNU make and pkg-config. You'll also need Lua 5.x to build the
 # Lua module (tested with Lua 5.3).
 
-# First run 'make checkout' to check out the submodules with the required
-# BLOCKS SDK and the Littlefoot examples. Then run 'make' to build everything,
-# or 'make testblocks' to just build the C test program (this doesn't need
-# Lua). The C API is in myblocks.cc, the Lua interface in myblocks_lua.c. The
-# generated Lua module is in myblocks.so after running 'make'.
+# First run 'make checkout' to check out the submodule with the required
+# BLOCKS SDK. Then run 'make' to build everything, or 'make testblocks' to
+# just build the C test program (this doesn't need Lua). The C API is in
+# myblocks.cc, the Lua interface in myblocks_lua.c. The generated Lua module
+# is in myblocks.so after running 'make'.
 
 # The testblocks.lua script shows how to use the provided operations. Also see
 # the comments at the beginning of the script for instructions on how to use
@@ -71,7 +71,7 @@ SDK: $(SDKLIB)
 $(SDKLIB):
 	$(MAKE) -C $(SDKPATH)/Build/Linux DEPFLAGS="-fPIC" CONFIG=$(CONFIG)
 
-# Check out the submodules (SDK etc.), you need to do this first!
+# Check out the SDK submodule. You need to do this first!
 checkout:
 	git submodule update --init
 
@@ -83,11 +83,11 @@ clean:
 realclean: clean
 	$(MAKE) -C $(SDKPATH)/Build/Linux CONFIG=$(CONFIG) clean
 
-# Also get rid of the submodules.
+# Also get rid of the submodule.
 distclean: clean
 	git submodule deinit --all -f
 
-# Installation of the Pd external.
+# Installation of the Pd external. Adjust the variables below as needed.
 prefix = /usr
 installdir = $(prefix)/lib/pd-externals/blocks
 installfiles = blocks.pd_lua blocks-*.pd myblocks.so examples
