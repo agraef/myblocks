@@ -1,6 +1,3 @@
 [submodule "BLOCKS-SDK"]
 	path = BLOCKS-SDK
 	url = https://github.com/WeAreROLI/BLOCKS-SDK.git
-[submodule "Littlefoot-Examples"]
-	path = Littlefoot-Examples
-	url = https://github.com/WeAreROLI/Littlefoot-Examples.git
