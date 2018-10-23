@@ -1,0 +1,46 @@
+
+// Draw a simple rectangle, change colors and the position of the rectangle in
+// response to program or MIDI CC messages from the host. A Pd patch to
+// control this program is in blocks-rectangle.pd.
+
+int x, y, fg, bg;
+
+void initialise()
+{
+  x = 0; y = 5;
+  bg = 0xff000000; fg = 0xffffffff;
+}
+
+void repaint()
+{
+  // fill the display with the background color
+  fillRect(bg, 0, 0, 15, 15);
+  // draw a rectangle at the current position
+  fillRect(fg, x, y, 4, 4);
+}
+
+void handleMessage(int what, int a, int b)
+{
+  // process messages from the host
+  if (what) {
+    // change colors (a = fg, b = bg)
+    fg = (fg & 0xff000000) | a;
+    bg = (bg & 0xff000000) | b;
+  } else {
+    // change coordinates
+    x = a; y = b;
+  }
+}
+
+void handleMIDI(int status, int data, int data2)
+{
+  if ((status & 0xf0) == 0xb0) {
+    // CC, ignore MIDI channel
+    if (data == 1)
+      // CC1 => x position
+      x = int(data2/8);
+    else if (data == 2)
+      // CC2 => y position
+      y = int((127-data2)/8);
+  }
+}
