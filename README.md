@@ -24,9 +24,12 @@ Please check the Makefile for details. On Linux, first run `make checkout` to ch
 
 ## Usage
 
-If running `make` completed with success, there's a C program `testblocks` and a Lua script `testblocks.lua` which you can run to check that the basic functionality works. Both programs work the same and offer the same command line options; please see the comments at the beginning of the Lua script for usage instructions. E.g.:
+If running `make` completed with success, there's a C program `testblocks` and a Lua script `testblocks.lua` which you can run to check that the basic functionality works. Both programs work the same and offer the same command line options; please see the comments at the beginning of the Lua script for usage instructions. E.g., make sure that your BLOCKS devices are connected to the host computer, then run:
 
     ./testblocks examples/XYZPad.littlefoot
+
+Or:
+
     lua testblocks.lua examples/XYZPad.littlefoot
 
 To run one of the included Pd patches, make sure that Pd-Lua is installed and activated in Pd. Then just open the patch in Pd and follow the instructions in it. In each of the patches you'll find a toggle labeled "click here to start/stop" which needs to be turned on to launch the BLOCKS interface and use all the functionality described above. You can turn this off and on again to reset the interface as often as needed.
