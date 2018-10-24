@@ -549,6 +549,25 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     return false;
 }
 
+extern "C" void myblocks_set(int blocknum, size_t offset, uint8_t data)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block) return;
+    block->setDataByte(offset, data);
+  }
+}
+
+extern "C" uint8_t myblocks_get(int blocknum, size_t offset)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block) return 0;
+    return block->getDataByte(offset);
+  }
+  return 0;
+}
+
 extern "C" void myblocks_send(int blocknum, int msg[3])
 {
   if (app) {

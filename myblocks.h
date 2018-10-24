@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +64,8 @@ typedef struct {
   bool pressed;     // true => pressed, false => released
 } myblocks_button_info_t;
 
+extern void myblocks_set(int blocknum, size_t offset, uint8_t data);
+extern uint8_t myblocks_get(int blocknum, size_t offset);
 extern void myblocks_set_button(int blocknum, int num, unsigned color);
 extern void myblocks_set_leds(int blocknum, int num, unsigned color);
 extern void myblocks_send(int blocknum, int msg[3]);

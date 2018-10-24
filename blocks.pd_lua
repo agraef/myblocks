@@ -148,6 +148,28 @@ function MB:in_1_leds(atoms)
    end
 end
 
+function MB:in_1_getdata(atoms)
+   local blocknum = atoms[1]
+   local offset = atoms[2]
+   if type(blocknum) == "number" and type(offset) == "number" then
+      self:outlet(1, "data", {myblocks.get(blocknum, offset)})
+   else
+      self:error("blocks: getdata expects a block number followed by an offset")
+   end
+end
+
+function MB:in_1_setdata(atoms)
+   local blocknum = atoms[1]
+   local offset = atoms[2]
+   local data = atoms[3]
+   if type(blocknum) == "number" and type(offset) == "number" and
+      type(data) == "number" then
+      myblocks.set(blocknum, offset, data)
+   else
+      self:error("blocks: setdata expects a block number followed by an offset and a byte value")
+   end
+end
+
 function MB:tick()
    if myblocks.process() and myblocks.changed() then
       self:outlet(2, "float", {myblocks.count_blocks()})
