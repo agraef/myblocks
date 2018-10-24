@@ -53,7 +53,7 @@ typedef struct {
   // called. The Littlefoot code will only be available if it was set in this
   // session (i.e., if it is a control block, or if myblocks_set_program() was
   // used), otherwise this field will be NULL.
-  const char *descr, *type_descr, *serial, *version, *code;
+  const char *descr, *type_descr, *serial, *version;
 } myblocks_info_t;
 
 extern bool myblocks_info(int blocknum, myblocks_info_t *info);

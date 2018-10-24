@@ -539,11 +539,6 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     } else {
       info->nbuttons = info->nleds = 0;
     }
-    if (Block::Program *prog = block->getProgram()) {
-      code = prog->getLittleFootProgram().toStdString();
-      info->code = code.c_str();
-    } else
-      info->code = 0;
     return true;
   } else
     return false;

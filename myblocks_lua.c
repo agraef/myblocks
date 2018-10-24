@@ -97,7 +97,7 @@ static int l_info(lua_State *L)
   int blocknum = lua_tointeger(L, -1);
   myblocks_info_t info;
   if (myblocks_info(blocknum, &info)) {
-    lua_createtable(L, 11, 0);
+    lua_createtable(L, 10, 0);
     lua_pushstring(L, "uid");
     lua_pushinteger(L, info.uid);
     lua_settable(L, -3);
@@ -131,11 +131,6 @@ static int l_info(lua_State *L)
     lua_pushstring(L, "version");
     lua_pushstring(L, info.version);
     lua_settable(L, -3);
-    if (info.code) {
-      lua_pushstring(L, "code");
-      lua_pushstring(L, info.code);
-      lua_settable(L, -3);
-    }
   } else {
     lua_pushnil(L);
   }
