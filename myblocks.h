@@ -15,11 +15,23 @@ extern void juce_fini(void);
 extern bool juce_process_events(void);
 
 // Wrappers for BLOCKS SDK operations.
+
+/* Note that to keep things simple, the library identifies blocks by using a
+   consecutive numbering of all blocks known to the interface, which
+   corresponds to the blocknum argument in the operations below. The master
+   block (the primary block directly connected to the host system) always has
+   number 0, but the ordering of the other blocks and thus the numbering may
+   change as blocks are connected and disconnected. As a remedy, the
+   myblocks_info() function returns a unique identifier 'uid' for each block
+   which can be used to identify blocks more reliably. The myblocks_blocknum()
+   function determines the consecutive number of a block given its uid, which
+   can then be passed as the blocknum argument to the other operations. */
+
 // This flag becomes true whenever the block topology changes.
 extern bool myblocks_changed(void);
 // Number of connected blocks.
 extern int  myblocks_count_blocks(void);
-// Determine the number of the block with the given uid.
+// Determine the number of the block with the given uid (-1 if not found).
 extern int myblocks_blocknum(uint64_t uid);
 // Load a Littlefoot program on the block, given its source code.
 extern bool myblocks_set_program(int blocknum, const char *code);
@@ -38,7 +50,7 @@ extern const char *myblocks_msg();
 
 // Retrieve information about blocks. This fills the following struct.
 typedef struct {
-  // unique identifier of the block (may change between sessions?)
+  // unique identifier of the block
   uint64_t uid;
   // type of block (0 = unknown, 1 = LightPad etc.)
   int type;
