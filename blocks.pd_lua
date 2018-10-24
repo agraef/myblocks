@@ -85,17 +85,7 @@ function MB:in_1_load(atoms)
 	 self:error("blocks: " .. myblocks.msg())
       end
    else
-      self:error("blocks: load expects a block number followed by a Littlefoot program file")
-   end
-end
-
-function MB:in_1_set(atoms)
-   if type(atoms[1]) == "number" and type(atoms[2]) == "string" then
-      if not myblocks.set_program(atoms[1], atoms[2]) then
-	 self:error("blocks: " .. myblocks.msg())
-      end
-   else
-      self:error("blocks: set expects a block number followed by a Littlefoot program text")
+      self:error("blocks: load expects a block number and a program file name")
    end
 end
 
@@ -103,7 +93,7 @@ function MB:in_1_save(atoms)
    if type(atoms[1]) == "number" then
       myblocks.save_program(atoms[1])
    else
-      self:error("blocks: save expects a block number as argument")
+      self:error("blocks: save expects a block number")
    end
 end
 
