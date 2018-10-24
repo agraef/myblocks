@@ -503,6 +503,15 @@ extern "C" void myblocks_factory_reset(int blocknum)
   if (app) app->finder.FactoryReset(blocknum);
 }
 
+static bool isControlBlock(Block *block)
+{
+  auto type = block->getType();
+  return type == Block::Type::liveBlock
+    || type == Block::Type::loopBlock
+    || type == Block::Type::touchBlock
+    || type == Block::Type::developerControlBlock;
+}
+
 extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
 {
   if (app) {
@@ -521,10 +530,7 @@ extern "C" bool myblocks_info(int blocknum, myblocks_info_t *info)
     info->battery_level = block->getBatteryLevel();
     info->is_charging = block->isBatteryCharging();
     info->is_master = block->isMasterBlock();
-    if (block->getType() == Block::liveBlock ||
-	block->getType() == Block::loopBlock ||
-	block->getType() == Block::developerControlBlock ||
-	block->getType() == Block::touchBlock) {
+    if (isControlBlock(block)) {
       info->nbuttons = block->getButtons().size();
       if (auto ledRow = block->getLEDRow())
 	info->nleds = ledRow->getNumLEDs();
@@ -566,12 +572,7 @@ extern "C" void myblocks_set_button(int blocknum, int num, unsigned color)
 {
   if (app) {
     Block *block = app->finder.GetBlock(blocknum);
-    if (!block ||
-	!(block->getType() == Block::liveBlock ||
-	  block->getType() == Block::loopBlock ||
-	  block->getType() == Block::developerControlBlock ||
-	  block->getType() == Block::touchBlock))
-      return;
+    if (!block || !isControlBlock(block)) return;
     auto button = app->finder.GetButton(block, num);
     if (!button) return;
     if (button->hasLight())
@@ -583,12 +584,7 @@ extern "C" void myblocks_set_leds(int blocknum, int num, unsigned color)
 {
   if (app) {
     Block *block = app->finder.GetBlock(blocknum);
-    if (!block ||
-	!(block->getType() == Block::liveBlock ||
-	  block->getType() == Block::loopBlock ||
-	  block->getType() == Block::developerControlBlock ||
-	  block->getType() == Block::touchBlock))
-      return;
+    if (!block || !isControlBlock(block)) return;
     auto ledRow = block->getLEDRow();
     if (!ledRow) return;
     for (int i = 0; i < ledRow->getNumLEDs(); ++i)
