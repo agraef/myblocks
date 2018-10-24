@@ -19,6 +19,8 @@ extern bool juce_process_events(void);
 extern bool myblocks_changed(void);
 // Number of connected blocks.
 extern int  myblocks_count_blocks(void);
+// Determine the number of the block with the given uid.
+extern int myblocks_blocknum(uint64_t uid);
 // Load a Littlefoot program on the block, given its source code.
 extern bool myblocks_set_program(int blocknum, const char *code);
 // Load a Littlefoot program on the block, given its source file name.

@@ -49,6 +49,13 @@ static int l_count_blocks(lua_State *L)
   return 1;
 }
 
+static int l_blocknum(lua_State *L)
+{
+  uint64_t uid = lua_tointeger(L, 1);
+  lua_pushinteger(L, myblocks_blocknum(uid));
+  return 1;
+}
+
 static int l_set_program(lua_State *L)
 {
   int blocknum = lua_tointeger(L, 1);
@@ -235,6 +242,7 @@ static const struct luaL_Reg l_myblocks [] = {
   {"process", l_process},
   {"changed", l_changed},
   {"count_blocks", l_count_blocks},
+  {"blocknum", l_blocknum},
   {"set_program", l_set_program},
   {"load_program", l_load_program},
   {"save_program", l_save_program},

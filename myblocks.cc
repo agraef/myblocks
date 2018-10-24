@@ -71,6 +71,9 @@ public:
   // only remains valid until the toplogy is updated, as indicated by the
   // Changed() flag.
   Block *GetBlock(int blocknum);
+  // Find the block with the given uid and return it block number (-1 if not
+  // found).
+  int FindBlock(Block::UID uid);
   // Get a button of a (control) block.
   ControlButton *GetButton(Block *block, int num);
   // Set the program to be run on the given block. The Littlefoot code is in
@@ -283,6 +286,16 @@ Block *BlockFinder::GetBlock(int blocknum)
     return 0;
 }
 
+int BlockFinder::FindBlock(Block::UID uid)
+{
+  int blocknum = 0;
+  for (auto& block : blocks) {
+    if (block->uid == uid) return blocknum;
+    blocknum++;
+  }
+  return -1;
+}
+
 ControlButton *BlockFinder::GetButton(Block *block, int num)
 {
   if (num >= 0 && num < block->getButtons().size())
@@ -423,7 +436,6 @@ extern "C" bool juce_process_events(void)
     return false;
 }
 
-
 // C API ---------------------------------------------------------------------
 
 extern "C" bool myblocks_changed()
@@ -438,6 +450,14 @@ extern "C" int myblocks_count_blocks()
 {
   if (app)
     return app->finder.CountBlocks();
+  else
+    return 0;
+}
+
+extern "C" int myblocks_blocknum(uint64_t uid)
+{
+  if (app)
+    return app->finder.FindBlock(uid);
   else
     return 0;
 }

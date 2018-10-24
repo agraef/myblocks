@@ -35,20 +35,39 @@ function MB:in_1_count()
    self:outlet(1, "float", {myblocks.count_blocks()})
 end
 
+function MB:in_1_blocknum(atoms)
+   local uid = tonumber(atoms[1], 16)
+   if uid ~= nil then
+      self:outlet(1, "float", {myblocks.blocknum(uid)})
+   else
+      self:error("blocks: blocknum expects a string of hex digits")
+   end
+end
+
 function MB:in_1_info(atoms)
    function mkinfo(i)
       local info = myblocks.info(i)
-      -- We rearrange the order a bit (uid comes last, code is omitted). Also,
-      -- we convert flags (booleans) to numbers, and uid, which is a 64 bit
-      -- number, is converted to a symbol (hex representation).
-      return {i, info.type,
-	      info.is_master and 1 or 0, info.is_charging and 1 or 0,
-	      info.battery_level, info.nbuttons, info.nleds,
-	      info.descr, info.type_descr, info.serial, info.version,
-	      string.format("%0x", info.uid)}
+      if info ~= nil then
+	 -- We rearrange the order a bit (uid comes last, code is
+	 -- omitted). Also, we convert flags (booleans) to numbers, and uid,
+	 -- which is a 64 bit number, is converted to a symbol (hex
+	 -- representation).
+	 return {i, info.type,
+		 info.is_master and 1 or 0, info.is_charging and 1 or 0,
+		 info.battery_level, info.nbuttons, info.nleds,
+		 info.descr, info.type_descr, info.serial, info.version,
+		 string.format("%0x", info.uid)}
+      else
+	 return nil
+      end
    end
    if type(atoms[1]) == "number" then
-      self:outlet(1, "info", mkinfo(math.floor(atoms[1])))
+      local info = mkinfo(math.floor(atoms[1]))
+      if info ~= nil then
+	 self:outlet(1, "info", info)
+      else
+	 self:error("blocks: info expects a valid block number")
+      end
    else
       local n = myblocks.count_blocks()
       for i = 0, n-1 do
