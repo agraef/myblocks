@@ -63,7 +63,7 @@ myblocks.so: myblocks.o $(SDKLIB) myblocks_lua.o
 testblocks: testblocks.o myblocks.o $(SDKLIB)
 	$(CXX) -g -o $@ $^ $(LIBS) -lstdc++
 
-myblocks.o: myblocks.h
+myblocks.o myblocks_lua.o: myblocks.h
 
 # Compile the SDK.
 SDK: $(SDKLIB)
