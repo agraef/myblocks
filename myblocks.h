@@ -80,6 +80,8 @@ typedef struct {
 
 extern void myblocks_set_byte(int blocknum, size_t offset, uint8_t data);
 extern uint8_t myblocks_get_byte(int blocknum, size_t offset);
+extern void myblocks_set_int(int blocknum, size_t offset, int data);
+extern int myblocks_get_int(int blocknum, size_t offset);
 extern void myblocks_set_button(int blocknum, int num, unsigned color);
 extern void myblocks_set_leds(int blocknum, int num, unsigned color);
 extern void myblocks_send(int blocknum, int msg[3]);

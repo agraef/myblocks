@@ -583,6 +583,31 @@ extern "C" uint8_t myblocks_get_byte(int blocknum, size_t offset)
   return 0;
 }
 
+extern "C" void myblocks_set_int(int blocknum, size_t offset, int data)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block) return;
+    block->setDataBytes(offset, &data, sizeof(data));
+  }
+}
+
+extern "C" int myblocks_get_int(int blocknum, size_t offset)
+{
+  if (app) {
+    Block *block = app->finder.GetBlock(blocknum);
+    if (!block) return 0;
+    uint8_t data[4];
+    // This assumes that the SDK encodes ints on the heap in the CPU byte
+    // order, whatever it is. This seems likely, but the documentation doesn't
+    // tell us, so this may have to be reviewed on bigendian CPUs.
+    for (int i = 0; i < 4; i++)
+      data[i] = block->getDataByte(offset+i);
+    return *(int*)data;
+  }
+  return 0;
+}
+
 extern "C" void myblocks_send(int blocknum, int msg[3])
 {
   if (app) {

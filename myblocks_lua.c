@@ -161,6 +161,23 @@ static int l_set_byte(lua_State *L)
   return 0;
 }
 
+static int l_get_int(lua_State *L)
+{
+  int blocknum = lua_tointeger(L, 1);
+  size_t offset = lua_tointeger(L, 2);
+  lua_pushinteger(L, myblocks_get_int(blocknum, offset));
+  return 1;
+}
+
+static int l_set_int(lua_State *L)
+{
+  int blocknum = lua_tointeger(L, 1);
+  size_t offset = lua_tointeger(L, 2);
+  int data = lua_tointeger(L, 3);
+  myblocks_set_int(blocknum, offset, data);
+  return 0;
+}
+
 static int l_set_button(lua_State *L)
 {
   int blocknum = lua_tointeger(L, 1);
@@ -252,6 +269,8 @@ static const struct luaL_Reg l_myblocks [] = {
   {"info", l_info},
   {"get_byte", l_get_byte},
   {"set_byte", l_set_byte},
+  {"get_int", l_get_int},
+  {"set_int", l_set_int},
   {"set_button", l_set_button},
   {"set_leds", l_set_leds},
   {"send", l_send},
