@@ -157,25 +157,25 @@ function MB:in_1_leds(atoms)
    end
 end
 
-function MB:in_1_getdata(atoms)
+function MB:in_1_getbyte(atoms)
    local blocknum = atoms[1]
    local offset = atoms[2]
    if type(blocknum) == "number" and type(offset) == "number" then
-      self:outlet(1, "data", {myblocks.get(blocknum, offset)})
+      self:outlet(1, "byte", {myblocks.get_byte(blocknum, offset)})
    else
-      self:error("blocks: getdata expects a block number followed by an offset")
+      self:error("blocks: getbyte expects a block number followed by an offset")
    end
 end
 
-function MB:in_1_setdata(atoms)
+function MB:in_1_setbyte(atoms)
    local blocknum = atoms[1]
    local offset = atoms[2]
-   local data = atoms[3]
+   local byte = atoms[3]
    if type(blocknum) == "number" and type(offset) == "number" and
-      type(data) == "number" then
-      myblocks.set(blocknum, offset, data)
+      type(byte) == "number" then
+      myblocks.set_byte(blocknum, offset, byte)
    else
-      self:error("blocks: setdata expects a block number followed by an offset and a byte value")
+      self:error("blocks: setbyte expects a block number followed by an offset and a byte value")
    end
 end
 

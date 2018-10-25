@@ -8,7 +8,7 @@ This is a simple C and Lua wrapper around the stand-alone BLOCKS SDK used to man
 
 - Resetting a block (which restarts the program running on a block), and performing a factory reset (which puts a block back into factory state).
 
-- Getting and setting the heap data of a Lightpad block.
+- Getting and setting the heap data of a block.
 
 - Receiving program messages from and sending messages to Lightpad blocks.
 
