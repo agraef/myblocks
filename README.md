@@ -2,7 +2,7 @@
 
 This is a simple C and Lua wrapper around the stand-alone BLOCKS SDK used to manage and control the [Roli BLOCKS][] devices, such as the Lightpad, the Seaboard and the various control blocks. It provides the most essential parts of the SDK to application programs written in C or Lua. This currently comprises:
 
-- Discovering the blocks which are connected to the host computer and retrieve information about these.
+- Discovering the blocks which are connected to the host computer and retrieving information about these.
 
 - Loading programs written in the Littlefoot language onto Lightpad blocks, and saving them for permanent use.
 
@@ -14,16 +14,14 @@ This is a simple C and Lua wrapper around the stand-alone BLOCKS SDK used to man
 
 - Receiving button events, and setting the button LEDs and LED strips of control blocks.
 
-All this functionality is also available in Pd by means of the `blocks` external. The external is written in Lua and thus requires [Pd-Lua][] to run.
-
-C and Lua test programs are included in the sources, as well as some Pd patches and sample Littlefoot programs, please check *Usage* below for details.
+All this functionality is also available in Pd by means of the `blocks` external. The external is written in Lua and thus requires [Pd-Lua][] to run. C and Lua test programs are included in the sources, as well as some Pd patches and sample Littlefoot programs, please check *Usage* below for details.
 
 [Roli BLOCKS]: https://roli.com/products/blocks/
 [Pd-Lua]: https://github.com/agraef/pd-lua
 
 ## Installation
 
-Currently the build system targets Linux, but porting to Mac and Windows should be a piece of cake. You'll need GNU make, pkg-config and gcc. Lua 5 is required to build the Lua module which is also needed for the Pd external. Lua 5.2 should probably do, Lua 5.3 has been tested. (The package can also be built without having Lua installed, but then only the C test program will be compiled.)
+Currently the build system targets Linux, but porting to Mac and Windows should be a piece of cake. You'll need GNU make, pkg-config and gcc. Lua 5 is required to build the Lua module which is also needed for the Pd external. Lua 5.3 has been tested, but Lua 5.2 will probably do as well. (The package can also be built without having Lua installed, but then only the C test program will be compiled.)
 
 Please check the Makefile for details. On Linux, first run `make checkout` to check out the BLOCKS SDK submodule, then `make` to build everything, and finally `sudo make install` to install the Pd external (the latter step is optional; you can also run the included Pd patches directly from the source directory). Clean and uninstall targets are provided as well. For package maintainers, the usual `DESTDIR` and `prefix` variables are supported to change the installation prefix and do staged installations.
 
@@ -31,7 +29,7 @@ Please check the Makefile for details. On Linux, first run `make checkout` to ch
 
 After running `make`, there's a C program `testblocks` which you can run to test the basic functionality. The sources also contain a Lua script `testblocks.lua` to test the Lua interface. Both programs work the same and offer the same command line options; please see the comments at the beginning of the Lua script for usage instructions.
 
-But myblocks is used most conveniently through the included Pd external. Make sure that Pd-Lua is installed and activated in Pd, then just open one of the provided patches in Pd and follow the instructions in it. In each of the patches you'll find a toggle labeled "click here to start/stop" which needs to be turned on to launch a little JUCE application which drives the myblocks interface and gives access to all the functionality described above. You can turn the toggle off and on again to reset the interface as often as needed.
+But myblocks is used most conveniently through the included Pd external. Make sure that Pd-Lua is installed and activated in Pd, then just open one of the provided patches in Pd and follow the instructions in the patch. In each of the patches you'll find a toggle labeled "click here to start/stop" which needs to be turned on to launch a little JUCE application which drives the myblocks interface and gives access to all the functionality described above. You can turn the toggle off and on again to reset the interface as often as needed.
 
 ## Littlefoot
 
@@ -51,7 +49,7 @@ The Littlefoot language and the SDK provide various facilities for exchanging da
 
 - Button events. Pressing any of the buttons on the control blocks connected to the master block generates a corresponding event which can be processed by the host program. Conversely, the host program can set the button LEDs and the LED strips on the control blocks to provide feedback.
 
-- MIDI data. Littlefoot programs can also send and receive MIDI data, which also works if the host program doesn't use the SDK, but requires a MIDI connection between device and host.
+- MIDI data. Littlefoot programs can also send and receive various kinds of MIDI data, which also works if the host program doesn't use the SDK, but requires a MIDI connection between device and host.
 
 MIDI communication will work with any host which can send and receive MIDI data, but requires that the program running on the Lightpad has been set up for MIDI operation. The other facilities will work with or without a MIDI connection, and are available through API functions of the myblocks library or the corresponding Pd messages. Please have a look at the myblocks.h header file and the included Pd patches for details.
 
